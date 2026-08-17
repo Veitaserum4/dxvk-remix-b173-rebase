@@ -110,6 +110,9 @@ namespace dxvk {
       }
     }
 
+    if ((m_signalValue % 256) == 0) {
+      ctx->flushCommandList();
+    }
     m_numExportsInFlight++;
 
     // We want to retain most of the src image state
@@ -130,7 +133,10 @@ namespace dxvk {
     const bool useBlit = srcDesc.format != dstDesc.format;
 
     // Detect changes in GLI since we're casting the VK format to GLI
-    assert(gli::format::FORMAT_LAST >= (gli::format) dstDesc.format);
+    if ((uint32_t) dstDesc.format > (uint32_t) gli::format::FORMAT_LAST) {
+      Logger::err(str::format("RTX: Unsupported texture format for export: ", dstDesc.format));
+      return;
+    }
     const gli::format outFormat = (gli::format) dstDesc.format;
 
     if (thumbnail) {
@@ -324,6 +330,9 @@ namespace dxvk {
       }
     }
 
+    if ((m_signalValue % 256) == 0) {
+      ctx->flushCommandList();
+    }
     m_numExportsInFlight++;
 
     // We want to retain most of the src image state

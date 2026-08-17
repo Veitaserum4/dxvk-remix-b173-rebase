@@ -782,9 +782,11 @@ BufSet<T> GameExporter::reduceBufferSet(const BufSet<T>& bufSet, const ReducedId
     float idxBufTimeCode = -1.f;
     if(reducedIdxBufSet.bufSet.size() > 1) {
       const auto iPair_timeCode_idxBuf = reducedIdxBufSet.bufSet.lower_bound(timeCode);
-      assert(iPair_timeCode_idxBuf != reducedIdxBufSet.bufSet.cend());
-      const float idxTimeCode = iPair_timeCode_idxBuf->first;
-      idxBufTimeCode = iPair_timeCode_idxBuf->first;
+      if (iPair_timeCode_idxBuf != reducedIdxBufSet.bufSet.cend()) {
+        idxBufTimeCode = iPair_timeCode_idxBuf->first;
+      } else {
+        idxBufTimeCode = reducedIdxBufSet.bufSet.crbegin()->first;
+      }
     } else {
       idxBufTimeCode = reducedIdxBufSet.bufSet.cbegin()->first;
     }
@@ -803,10 +805,13 @@ BufSet<T> GameExporter::reduceBufferSet(const BufSet<T>& bufSet, const ReducedId
         const auto ogIdx = (ogIndex * elemsPerIdx) + elemNum;
         const auto redIdx = (redIndex * elemsPerIdx) + elemNum;
         assert(redIdx <= ogIdx);
-        reducedBufScratch[redIdx] = buf[ogIdx];
+        if (ogIdx < buf.size()) {
+          reducedBufScratch[redIdx] = buf[ogIdx];
+        }
       }
     }
     reducedBufSet[timeCode] = pxr::VtArray<T>(reducedBufScratch, reducedBufScratch + numElems);
+    delete[] reducedBufScratch;
   }
   return reducedBufSet;
 }

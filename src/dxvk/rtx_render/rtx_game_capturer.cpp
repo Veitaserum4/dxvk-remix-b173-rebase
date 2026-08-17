@@ -758,8 +758,8 @@ namespace dxvk {
       // However, swap twice is the same as original order. So, we do XOR here make sure we only swap the winding order when 1 or 3 (odd number) of these 3 situations happen.
       const bool isChangingHandedness = (capCam.proj.bInv ^ (pMesh->lssData.isLhs ^ capCam.isLHS()));
       if (isChangingHandedness){
-        for (uint32_t i = 0; i < numIndices; i+=3) {
-          std::swap(indices[i], indices[i + 2]);
+        for (size_t idx = 0; idx + 2 < numIndices; idx += 3) {
+          std::swap(indices[idx], indices[idx + 2]);
         }
       }
 
