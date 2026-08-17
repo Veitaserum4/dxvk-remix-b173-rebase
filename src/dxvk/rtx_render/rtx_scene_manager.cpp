@@ -1861,19 +1861,28 @@ namespace dxvk {
     // We're going to use this to create a modified sampler for replacement textures.
     // Legacy and replacement materials should follow same filtering but due to lack of override capability per texture
     // legacy textures use original sampler to stay true to the original intent while replacements use more advanced filtering
-    // for better quality by default.
-    const Rc<DxvkSampler>& samplerOverride = renderMaterialData.getSamplerOverride();
-    Rc<DxvkSampler> sampler = samplerOverride;
-    // If the original sampler if valid and there isnt an override sampler
-    // go ahead with patching and maybe merging the sampler states
-    if (samplerOverride == nullptr && drawCallState.getMaterialData().getSampler().ptr() != nullptr) {
-      DxvkSamplerCreateInfo samplerInfo = drawCallState.getMaterialData().getSampler()->info(); // Use sampler create info struct as convenience
-      renderMaterialData.populateSamplerInfo(samplerInfo);
+      // for better quality by default.
+      const Rc<DxvkSampler>& samplerOverride = renderMaterialData.getSamplerOverride();
+      Rc<DxvkSampler> sampler = samplerOverride;
+      // If there isnt an override sampler, go ahead with patching and maybe merging the sampler states
+      if (samplerOverride == nullptr) {
+        DxvkSamplerCreateInfo samplerInfo = {};
+        if (drawCallState.getMaterialData().getSampler().ptr() != nullptr) {
+          samplerInfo = drawCallState.getMaterialData().getSampler()->info(); // Use sampler create info struct as convenience
+        } else {
+          // Provide default values for external draws
+          samplerInfo.magFilter = VK_FILTER_LINEAR;
+          samplerInfo.minFilter = VK_FILTER_LINEAR;
+          samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+          samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+          samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        }
+        renderMaterialData.populateSamplerInfo(samplerInfo);
 
-      sampler = patchSampler(samplerInfo.magFilter,
-                             samplerInfo.addressModeU, samplerInfo.addressModeV, samplerInfo.addressModeW,
-                             samplerInfo.borderColor);
-    }
+        sampler = patchSampler(samplerInfo.magFilter,
+                               samplerInfo.addressModeU, samplerInfo.addressModeV, samplerInfo.addressModeW,
+                               samplerInfo.borderColor);
+      }
     if (drawCallState.isEye()) {
       // force eye whites and iris to not repeat
       sampler = patchSampler(
