@@ -183,19 +183,31 @@
       static pxr::TfToken get##name##Token() { return pxr::TfToken("inputs:"#usd_attr); }
 
 #define WRITE_CONSTANT_DESERIALIZER(name, usd_attr, type, minVal, maxVal, defaultVal) \
-      if(shader.HasAttribute(get##name##Token())) { \
-        static_assert(uint64_t(DirtyFlags::k_##name) < 64); \
-        target.m_dirty.set(DirtyFlags::k_##name); \
-        pxr::VtValue val; \
-        shader.GetAttribute(get##name##Token()).Get(&val); \
-        if(!val.IsEmpty()) { \
-          if(val.IsHolding<type>()) { \
-            target.m_##name = val.UncheckedGet<type>(); \
-          } else { \
-            Logger::warn(str::format("Material attribute ", #usd_attr, " has unexpected type, using default value")); \
+        if(shader.HasAttribute(get##name##Token())) { \
+          static_assert(uint64_t(DirtyFlags::k_##name) < 64); \
+          target.m_dirty.set(DirtyFlags::k_##name); \
+          pxr::VtValue val; \
+          shader.GetAttribute(get##name##Token()).Get(&val); \
+          if(!val.IsEmpty()) { \
+            if(val.IsHolding<type>()) { \
+              target.m_##name = val.UncheckedGet<type>(); \
+            } else { \
+              bool handled = false; \
+              if constexpr (std::is_integral_v<type>) { \
+                if(val.IsHolding<int>()) { \
+                  target.m_##name = static_cast<type>(val.UncheckedGet<int>()); \
+                  handled = true; \
+                } else if(val.IsHolding<uint32_t>()) { \
+                  target.m_##name = static_cast<type>(val.UncheckedGet<uint32_t>()); \
+                  handled = true; \
+                } \
+              } \
+              if (!handled) { \
+                Logger::warn(str::format("Material attribute ", #usd_attr, " has unexpected type, using default value")); \
+              } \
+            } \
           } \
-        } \
-      }
+        }
 
 #define WRITE_TEXTURE_DESERIALIZER(name, usd_attr, type, minVal, maxVal, defaultVal) \
       if(shader.HasAttribute(get##name##Token())) { \
