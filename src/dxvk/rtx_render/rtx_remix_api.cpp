@@ -671,7 +671,7 @@ namespace {
           tobool(extTranslucent->thinWallThickness_hasvalue),
           extTranslucent->thinWallThickness_hasvalue ? extTranslucent->thinWallThickness_value : 0.001f, // default TranslucentMaterial::ThinWallThickness
           tobool(extTranslucent->useDiffuseLayer),
-          false, // enableTransmissionMask is currently authored through USD/MDL only
+          tobool(extTranslucent->enableTransmissionMask),
           info.filterMode,
           info.wrapModeU,
           info.wrapModeV,
