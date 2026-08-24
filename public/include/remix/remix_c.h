@@ -293,8 +293,6 @@ extern "C" {
     remixapi_Bool       thinWallThickness_hasvalue;
     float               thinWallThickness_value;
     remixapi_Bool       useDiffuseLayer;
-    // When useDiffuseLayer is true, use the albedo texture alpha channel to mask transmission (preserves opaque pixels like glass frames)
-    remixapi_Bool       enableTransmissionMask;
   } remixapi_MaterialInfoTranslucentEXT;
 
   typedef struct remixapi_MaterialInfoPortalEXT {
