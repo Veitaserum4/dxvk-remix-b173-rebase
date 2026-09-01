@@ -173,6 +173,13 @@ if dxvk_compiler.get_id() == 'clang'
   endif
 endif
 
+if dxvk_compiler.get_id() == 'clang-cl'
+  add_project_arguments(
+    '/clang:-fno-strict-enums',
+    '/clang:-Wno-unknown-warning-option',
+    '/clang:-Wno-enum-constexpr-conversion',
+    language: 'cpp')
+endif
 if not dxvk_is_msvc
   add_project_arguments('-D_WIN32_WINNT=0xa00', language : 'cpp')
 
