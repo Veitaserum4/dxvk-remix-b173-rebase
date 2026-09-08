@@ -589,7 +589,7 @@ namespace dxvk {
       pMesh->lssData.numIndices = numIndices;
       pMesh->lssData.isDoubleSided = isDoubleSided;
       pMesh->lssData.numBones = skinData.numBones;
-      pMesh->lssData.bonesPerVertex = skinData.numBonesPerVertex;
+      pMesh->lssData.bonesPerVertex = skinData.numBonesPerVertex > 0 ? skinData.numBonesPerVertex : rasterGeomData.numBonesPerVertex;
       pMesh->lssData.isLhs = isLhs;
       Logger::debug("[GameCapturer][" + m_pCap->idStr + "][Mesh:" + pMesh->lssData.meshName + "] New");
     }
@@ -865,10 +865,22 @@ namespace dxvk {
                                          const RasterGeometry& geomData,
                                          const float currentFrameNum,
                                          std::shared_ptr<Mesh> pMesh) {
+    if (pMesh->lssData.bonesPerVertex == 0) {
+      Logger::warn(str::format("[GameCapturer] Skipping captureMeshBlending: bonesPerVertex is 0 for mesh ", pMesh->lssData.meshName));
+      return;
+    }
+
     AssetExporter::BufferCallback captureMeshBlendWeightsAsync = [ctx, geomData, currentFrameNum, pMesh](Rc<DxvkBuffer> inBuf) {
       // Prep helper vars
       const size_t numVertices = geomData.vertexCount;
       const size_t bonesPerVertex = pMesh->lssData.bonesPerVertex;
+      if (bonesPerVertex == 0) {
+        Logger::warn(str::format("[GameCapturer] Skipping blend weights export: bonesPerVertex is 0 for mesh ", pMesh->lssData.meshName));
+        pMesh->meshSync.numOutstanding--;
+        pMesh->meshSync.cond.notify_all();
+        return;
+      }
+
       const size_t stride = geomData.blendWeightBuffer.stride() / sizeof(float);
       const DxvkBufferSlice bufferSlice(inBuf, 0, inBuf->info().size);
       const VkFormat format = geomData.blendWeightBuffer.vertexFormat();
@@ -877,13 +889,19 @@ namespace dxvk {
       } else if (bonesPerVertex == 3) {
         assert(format == VK_FORMAT_R32G32_SFLOAT || format == VK_FORMAT_R32G32B32_SFLOAT);
       } else if (bonesPerVertex == 4) {
-        assert(format == VK_FORMAT_R32G32B32_SFLOAT);
+        assert(format == VK_FORMAT_R32G32B32_SFLOAT || format == VK_FORMAT_R32_SFLOAT);
       }
       // Ensure no reads are out of bounds
       assert(((size_t) (numVertices - 1) * (size_t) geomData.blendWeightBuffer.stride() + sizeof(float) * bonesPerVertex) <=
              (bufferSlice.length() - geomData.blendWeightBuffer.offsetFromSlice()));
       // Get copied-to-CPU GPU buffer
       const float* pVkBwBuf = (float*) bufferSlice.mapPtr((size_t) geomData.blendWeightBuffer.offsetFromSlice());
+      if (!pVkBwBuf) {
+        Logger::warn(str::format("[GameCapturer] Failed to map blend weights buffer for mesh ", pMesh->lssData.meshName));
+        pMesh->meshSync.numOutstanding--;
+        pMesh->meshSync.cond.notify_all();
+        return;
+      }
       assert(pVkBwBuf);
       // Copy GPU buffer to local VtArray
       pxr::VtArray<float> targetBuffer;
@@ -912,6 +930,13 @@ namespace dxvk {
       // Prep helper vars
       const size_t numVertices = geomData.vertexCount;
       const size_t bonesPerVertex = pMesh->lssData.bonesPerVertex;
+      if (bonesPerVertex == 0) {
+        Logger::warn(str::format("[GameCapturer] Skipping blend indices export: bonesPerVertex is 0 for mesh ", pMesh->lssData.meshName));
+        pMesh->meshSync.numOutstanding--;
+        pMesh->meshSync.cond.notify_all();
+        return;
+      }
+
       const size_t stride = geomData.blendIndicesBuffer.stride() / sizeof(uint8_t);
       const DxvkBufferSlice bufferSlice(inBuf, 0, inBuf->info().size);
       // Ensure no reads are out of bounds
@@ -919,6 +944,12 @@ namespace dxvk {
              (bufferSlice.length() - geomData.blendIndicesBuffer.offsetFromSlice()));
       // Get copied-to-CPU GPU buffer
       const uint8_t* VkBuf = (uint8_t*) bufferSlice.mapPtr((size_t) geomData.blendIndicesBuffer.offsetFromSlice());
+      if (!VkBuf) {
+        Logger::warn(str::format("[GameCapturer] Failed to map blend indices buffer for mesh ", pMesh->lssData.meshName));
+        pMesh->meshSync.numOutstanding--;
+        pMesh->meshSync.cond.notify_all();
+        return;
+      }
       assert(VkBuf);
       // Copy GPU buffer to local VtArray
       pxr::VtArray<int> targetBuffer;
@@ -987,8 +1018,8 @@ namespace dxvk {
                                           const float framesPerSecond) {
       Capture& cap = *pCap;
       const auto numTexExportsInProgress = m_exporter.getNumExportsInFlights();
-      constexpr float kTimePerTexExport = 0.0050f; // Liberally decided by inspection, derived from timed out tests
-      const float texExportTimeout = numTexExportsInProgress * kTimePerTexExport;
+      constexpr float kTimePerTexExport = 0.050f;
+      const float texExportTimeout = std::max(15.0f, numTexExportsInProgress * kTimePerTexExport);
       m_exporter.waitForAllExportsToComplete(texExportTimeout);
       assert(pState->has<State::PreppingExport>());
       const auto exportPrep = prepExport(cap, framesPerSecond);

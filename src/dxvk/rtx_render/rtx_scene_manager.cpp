@@ -3185,6 +3185,9 @@ namespace dxvk {
     for (size_t i = 0; i < submeshes.size(); i++) {
       state.drawCall.overrideGeometryData(&submeshes[i]);
       state.drawCall.overrideCullMode(state.doubleSided ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT);
+      if (state.drawCall.getSkinningState().numBones > 0 && submeshes[i].numBonesPerVertex > 0) {
+        state.drawCall.modifySkinningData().numBonesPerVertex = submeshes[i].numBonesPerVertex;
+      }
 
       XXH64_hash_t textureHash = 0;
 

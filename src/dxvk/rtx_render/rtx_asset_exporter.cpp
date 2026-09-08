@@ -76,7 +76,7 @@ namespace dxvk {
 
       auto startTime = std::chrono::system_clock::now();
       while (m_numExportsInFlight > 0 &&
-             std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - startTime).count() < numSecsToWait) {
+             std::chrono::duration<float>(std::chrono::system_clock::now() - startTime).count() < numSecsToWait) {
         Sleep(1);
       }
 

@@ -798,6 +798,10 @@ struct DrawCallState {
     return skinningData;
   }
 
+  SkinningData& modifySkinningData() {
+    return skinningData;
+  }
+
   bool expandSkinningBonePalette(uint32_t requiredBoneCount) {
     return skinningData.expandBonePalette(requiredBoneCount);
   }
