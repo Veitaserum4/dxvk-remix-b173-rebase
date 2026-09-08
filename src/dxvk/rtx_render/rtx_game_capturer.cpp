@@ -480,7 +480,7 @@ namespace dxvk {
     // than at runtime, breaking replacement parity.
     XXH64_hash_t meshHash = 0;
     if (pBlas->input.getGeometryData().externalMesh != nullptr) {
-      meshHash = reinterpret_cast<XXH64_hash_t>(pBlas->input.getGeometryData().externalMesh);
+      meshHash = pBlas->input.getGeometryData().getExternalMeshHash();
       Logger::info(str::format("[GameCapturer] Using external mesh hash: 0x", std::hex, meshHash, std::dec));
     } else {
       meshHash = pBlas->input.getHash(RtxOptions::geometryAssetHashRule());

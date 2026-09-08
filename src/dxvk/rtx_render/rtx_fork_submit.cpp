@@ -131,7 +131,7 @@ namespace fork_hooks {
       const RasterGeometry& geometry = drawCall.getGeometryData();
       const bool externalMesh = geometry.externalMesh != nullptr;
       if (externalMesh) {
-        meta.meshHash = reinterpret_cast<XXH64_hash_t>(geometry.externalMesh);
+        meta.meshHash = geometry.getExternalMeshHash();
       } else {
         meta.meshHash = drawCall.getHash(RtxOptions::geometryAssetHashRule());
       }

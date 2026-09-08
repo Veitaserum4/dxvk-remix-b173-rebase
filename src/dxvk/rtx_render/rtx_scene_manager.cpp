@@ -3180,13 +3180,15 @@ namespace dxvk {
       return;
     }
 
+    const DrawCallState baseDrawCall = state.drawCall;
     AxisAlignedBoundingBox geometryBBox;
 
     for (size_t i = 0; i < submeshes.size(); i++) {
-      state.drawCall.overrideGeometryData(&submeshes[i]);
-      state.drawCall.overrideCullMode(state.doubleSided ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT);
-      if (state.drawCall.getSkinningState().numBones > 0 && submeshes[i].numBonesPerVertex > 0) {
-        state.drawCall.modifySkinningData().numBonesPerVertex = submeshes[i].numBonesPerVertex;
+      DrawCallState submeshDrawCall = baseDrawCall;
+      submeshDrawCall.overrideGeometryData(&submeshes[i]);
+      submeshDrawCall.overrideCullMode(state.doubleSided ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT);
+      if (submeshDrawCall.getSkinningState().numBones > 0 && submeshes[i].numBonesPerVertex > 0) {
+        submeshDrawCall.modifySkinningData().numBonesPerVertex = submeshes[i].numBonesPerVertex;
       }
 
       XXH64_hash_t textureHash = 0;
@@ -3195,9 +3197,9 @@ namespace dxvk {
       if (material != nullptr) {
         fork_hooks::externalDrawMaterialReplacement(*m_pReplacer, material);
 
-        state.drawCall.modifyMaterialData().setHashOverride(material->getHash());
+        submeshDrawCall.modifyMaterialData().setHashOverride(material->getHash());
 
-        fork_hooks::externalDrawTextureCategories(material, state.drawCall, textureHash);
+        fork_hooks::externalDrawTextureCategories(material, submeshDrawCall, textureHash);
       }
 
       const RtxParticleSystemDesc* pParticles = nullptr;
@@ -3205,7 +3207,7 @@ namespace dxvk {
         pParticles = &state.optionalParticleDesc.value();
       }
 
-      fork_hooks::externalDrawObjectPicking(*m_device, state.drawCall, textureHash, *this);
+      fork_hooks::externalDrawObjectPicking(*m_device, submeshDrawCall, textureHash, *this);
 
       RtInstance* existingInstance = (replacementInstance->prims.size() > i)
           ? replacementInstance->prims[i].getInstance() : nullptr;
@@ -3213,7 +3215,7 @@ namespace dxvk {
       static MaterialData defaultMaterialData(LegacyMaterialData::createDefault());
       auto& materialData = material != nullptr ? *material : defaultMaterialData;
 
-      RtInstance* instance = processDrawCallState(ctx, state.drawCall, materialData, *replacementInstance, existingInstance, pParticles);
+      RtInstance* instance = processDrawCallState(ctx, submeshDrawCall, materialData, *replacementInstance, existingInstance, pParticles);
 
       if (instance != nullptr) {
         if (replacementInstance->root.getUntyped() == nullptr) {

@@ -468,6 +468,18 @@ struct RasterGeometry {
 
   remixapi_MaterialHandle externalMaterial = nullptr;
   remixapi_MeshHandle externalMesh = nullptr;
+  uint32_t externalSubmeshIndex = 0;
+
+  XXH64_hash_t getExternalMeshHash() const {
+    if (!externalMesh) {
+      return 0;
+    }
+    const XXH64_hash_t base = reinterpret_cast<XXH64_hash_t>(externalMesh);
+    if (externalSubmeshIndex == 0) {
+      return base;
+    }
+    return base ^ (XXH64(&externalSubmeshIndex, sizeof(externalSubmeshIndex), 0) + 0x9e3779b97f4a7c15ULL + (base << 6) + (base >> 2));
+  }
 
   template<uint32_t rule>
   const XXH64_hash_t getHashForRule() const {
