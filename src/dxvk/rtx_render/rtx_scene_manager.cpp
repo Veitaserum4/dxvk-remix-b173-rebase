@@ -3193,9 +3193,10 @@ namespace dxvk {
 
       XXH64_hash_t textureHash = 0;
 
+      MaterialData renderMaterialData;
       const MaterialData* material = m_pReplacer->accessExternalMaterial(submeshes[i].externalMaterial);
       if (material != nullptr) {
-        fork_hooks::externalDrawMaterialReplacement(*m_pReplacer, material);
+        fork_hooks::externalDrawMaterialReplacement(*m_pReplacer, material, renderMaterialData);
 
         submeshDrawCall.modifyMaterialData().setHashOverride(material->getHash());
 

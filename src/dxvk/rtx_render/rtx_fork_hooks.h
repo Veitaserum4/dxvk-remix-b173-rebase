@@ -114,10 +114,10 @@ namespace dxvk {
     std::vector<AssetReplacement>* externalDrawMeshReplacement(
       AssetReplacer& replacer, XXH64_hash_t meshHash);
 
-    // Checks for a USD material replacement and updates the material pointer in-place.
+    // Checks for a USD material replacement and merges the original material if one is found.
     // Implementation in rtx_fork_submit.cpp.
     void externalDrawMaterialReplacement(
-      AssetReplacer& replacer, const MaterialData*& material);
+      AssetReplacer& replacer, const MaterialData*& material, MaterialData& renderMaterialData);
 
     // Resolves the albedo texture hash from an API material and auto-applies
     // all texture-based instance categories (Sky, Ignore, WorldUI, etc.).

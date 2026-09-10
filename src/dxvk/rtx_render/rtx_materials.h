@@ -2082,6 +2082,15 @@ struct MaterialData {
     }
   }
 
+  void merge(const MaterialData& input) {
+    if (getType() == input.getType()) {
+      std::visit([&](auto& mat) {
+        using T = std::decay_t<decltype(mat)>;
+        mat.merge(std::get<T>(input.m_data));
+      }, m_data);
+    }
+  }
+
   void mergeLegacyMaterial(const LegacyMaterialData& input) {
     std::visit([&](auto& mat) {
       using T = std::decay_t<decltype(mat)>;

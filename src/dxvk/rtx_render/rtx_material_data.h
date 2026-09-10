@@ -212,8 +212,11 @@
 #define WRITE_TEXTURE_DESERIALIZER(name, usd_attr, type, minVal, maxVal, defaultVal) \
       if(shader.HasAttribute(get##name##Token())) { \
         static_assert(uint64_t(DirtyFlags::k_##name) < 64); \
-        target.m_dirty.set(DirtyFlags::k_##name); \
-        target.m_##name = TextureRef(getTexture(shader, get##name##Token())); \
+        auto texRef = TextureRef(getTexture(shader, get##name##Token())); \
+        if (texRef.isValid()) { \
+          target.m_dirty.set(DirtyFlags::k_##name); \
+          target.m_##name = texRef; \
+        } \
       }
 
 #define WRITE_PARAMETER_MERGE(name, usd_attr, type, minVal, maxVal, defaultVal) \

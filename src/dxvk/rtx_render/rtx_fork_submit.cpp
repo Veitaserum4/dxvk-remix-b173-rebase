@@ -43,14 +43,16 @@ namespace fork_hooks {
   // externalDrawMaterialReplacement
   //
   // Checks for a USD material replacement via getReplacementMaterial() and
-  // updates the caller's material pointer in-place if one is found.
+  // merges the original material if one is found (matches D3D9 draw behavior).
   // ---------------------------------------------------------------------------
   void externalDrawMaterialReplacement(
-      AssetReplacer& replacer, const MaterialData*& material) {
+      AssetReplacer& replacer, const MaterialData*& material, MaterialData& renderMaterialData) {
     // Check for material replacement (matches the D3D9 draw path behavior).
     MaterialData* pReplacementMaterial = replacer.getReplacementMaterial(material->getHash());
     if (pReplacementMaterial != nullptr) {
-      material = pReplacementMaterial;
+      renderMaterialData = *pReplacementMaterial;
+      renderMaterialData.merge(*material);
+      material = &renderMaterialData;
     }
   }
 
